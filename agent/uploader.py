@@ -29,8 +29,9 @@ def upload_image(image_path: str) -> str:
 def upload_video(video_path: str) -> str:
     """Uploads local MP4 video file to high-speed public host and returns direct HTTPS URL."""
     clean_path = str(video_path).replace("\\", "/")
+    curl_bin = "curl.exe" if os.name == "nt" else "curl"
     cmd = [
-        "curl.exe", "-s",
+        curl_bin, "-s",
         "-F", "reqtype=fileupload",
         "-F", f"fileToUpload=@{clean_path}",
         "https://catbox.moe/user/api.php"

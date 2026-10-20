@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  wob-agent:
+    build: .
+    container_name: wob-agent
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - wob_data:/app/data
+    environment:
+      - DB_PATH=/app/data/agent_data.db
+    networks:
+      - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wob-http.entrypoints=http"
+      - "traefik.http.routers.wob-http.rule=Host(`wob.scholarhubhpu.in`)"
+      - "traefik.http.routers.wob-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.wob-https.entrypoints=https"
+      - "traefik.http.routers.wob-https.rule=Host(`wob.scholarhubhpu.in`)"
+      - "traefik.http.routers.wob-https.tls=true"
+      - "traefik.http.routers.wob-https.tls.certresolver=letsencrypt"
+      - "traefik.http.services.wob-svc.loadbalancer.server.port=8000"
+
+volumes:
+  wob_data:
+
+networks:
+  coolify:
+    external: true

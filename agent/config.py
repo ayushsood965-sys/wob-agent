@@ -22,4 +22,4 @@ TIMEZONE = os.getenv("TIMEZONE", "Asia/Kolkata")
 OUTPUT_DIR = BASE_DIR / "generated_cards"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-DB_PATH = BASE_DIR / "agent_data.db"
+DB_PATH = Path(os.getenv("DB_PATH", str(BASE_DIR / "agent_data.db")))

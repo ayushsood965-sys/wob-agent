@@ -16,12 +16,20 @@ WIDTH = 1080
 HEIGHT = 1350
 
 def get_font(font_name: str, size: int):
-    win_font_path = Path("C:/Windows/Fonts") / font_name
-    if win_font_path.exists():
-        try:
-            return ImageFont.truetype(str(win_font_path), size)
-        except Exception:
-            pass
+    is_bold = "b." in font_name.lower() or "bold" in font_name.lower()
+    candidates = [
+        Path("C:/Windows/Fonts") / font_name,
+        Path("/usr/share/fonts/truetype/dejavu") / ("DejaVuSerif-Bold.ttf" if is_bold else "DejaVuSerif.ttf"),
+        Path("/usr/share/fonts/truetype/liberation") / ("LiberationSerif-Bold.ttf" if is_bold else "LiberationSerif-Regular.ttf"),
+        Path("/usr/share/fonts/truetype/freefont") / ("FreeSerifBold.ttf" if is_bold else "FreeSerif.ttf"),
+        Path(font_name)
+    ]
+    for p in candidates:
+        if p.exists():
+            try:
+                return ImageFont.truetype(str(p), size)
+            except Exception:
+                pass
     try:
         return ImageFont.truetype(font_name, size)
     except Exception:
