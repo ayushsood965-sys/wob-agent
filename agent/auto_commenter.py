@@ -17,18 +17,47 @@ If they typed '1111', 'YES', 'I AM', or a sign, affirm that they have claimed th
 Keep it aesthetic and humble. Include 1 tasteful emoji (e.g., ✨, ✦, 🪐).
 Return ONLY the reply text. Do not wrap in quotes.
 """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 60}
-    }
-    try:
-        resp = requests.post(url, json=payload, timeout=10)
-        data = resp.json()
-        reply = data["candidates"][0]["content"]["parts"][0]["text"].strip().strip('"')
-        return reply
-    except Exception as e:
-        return "Aligned and claimed. May your frequency continue to rise ✨"
+    if GEMINI_API_KEY:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 60}
+        }
+        try:
+            resp = requests.post(url, json=payload, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                return data["candidates"][0]["content"]["parts"][0]["text"].strip().strip('"')
+        except Exception:
+            pass
+
+    # OpenRouter fallback
+    from .config import OPENROUTER_API_KEY, OPENROUTER_MODELS
+    if OPENROUTER_API_KEY:
+        for model in OPENROUTER_MODELS:
+            try:
+                r = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                        "HTTP-Referer": "https://wob.scholarhubhpu.in",
+                        "X-Title": "Words of Becoming",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.7,
+                        "max_tokens": 60
+                    },
+                    timeout=12
+                )
+                if r.status_code == 200:
+                    return r.json()["choices"][0]["message"]["content"].strip().strip('"')
+            except Exception:
+                continue
+
+    return "Aligned and claimed. May your frequency continue to rise ✨"
 
 def process_comments():
     """Scans recent posts, identifies unanswered comments, and replies automatically."""

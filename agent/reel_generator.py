@@ -6,7 +6,7 @@ import numpy as np
 import imageio_ffmpeg
 from PIL import Image
 from .config import OUTPUT_DIR, BASE_DIR
-from .card_renderer import BG_COLOR, WIDTH as CARD_W, HEIGHT as CARD_H
+from .card_renderer import WIDTH as CARD_W, HEIGHT as CARD_H
 
 REEL_W = 1080
 REEL_H = 1920
@@ -74,8 +74,9 @@ def create_looping_reel(card_image_path: str) -> tuple:
     raw_video_path = OUTPUT_DIR / f"raw_video_{uuid.uuid4().hex[:6]}.mp4"
     final_reel_path = OUTPUT_DIR / f"reel_{uuid.uuid4().hex[:8]}.mp4"
 
-    # Base 9:16 luxury cream canvas
-    base_canvas = Image.new("RGBA", (REEL_W, REEL_H), (*BG_COLOR, 255))
+    # Base 9:16 vertical canvas matching the card's theme (Dark Obsidian or Cream)
+    bg_sample = card_img.getpixel((20, 20))
+    base_canvas = Image.new("RGBA", (REEL_W, REEL_H), bg_sample)
     card_y = (REEL_H - CARD_H) // 2
     base_canvas.paste(card_img, (0, card_y), card_img)
 

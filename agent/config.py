@@ -14,6 +14,14 @@ PAGE_ID = os.getenv("PAGE_ID", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
 
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_MODELS = [
+    "minimax/minimax-m3.1-flash:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "nvidia/nemotron-3.5-super-vl:free",
+    "nvidia/nemotron-3.5-lightning:free"
+]
+
 IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "")
 
 POSTING_TIMES = [t.strip() for t in os.getenv("POSTING_TIMES", "08:00,11:30,14:30,18:00,21:30").split(",")]
