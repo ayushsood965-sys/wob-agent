@@ -103,7 +103,8 @@ def render_quote_card(quote: str, category: str = "WORDS OF BECOMING", affirmati
     draw.line([(WIDTH / 2 - 50, 210), (WIDTH / 2 + 50, 210)], fill=BORDER_COLOR, width=1)
 
     # 3. Main Quote
-    quote_clean = f"“{quote.strip('“”\"')}”"
+    clean_q = quote.strip('“”"')
+    quote_clean = f"“{clean_q}”"
     base_font_size = 54
     if len(quote) > 170:
         base_font_size = 46
