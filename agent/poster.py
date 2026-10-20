@@ -7,7 +7,7 @@ from .config import BASE_DIR, INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_ACCOUNT_ID
 POSTER_JS_PATH = BASE_DIR / "agent" / "poster.mjs"
 
 def publish_to_instagram(image_url: str, caption: str) -> str:
-    """Invokes @mcpware/instagram-mcp client to publish an image with caption."""
+    """Publishes a single image card to Instagram."""
     env = os.environ.copy()
     env["INSTAGRAM_ACCESS_TOKEN"] = INSTAGRAM_ACCESS_TOKEN
     env["INSTAGRAM_ACCOUNT_ID"] = INSTAGRAM_ACCOUNT_ID
@@ -47,5 +47,27 @@ def publish_carousel_to_instagram(image_urls: list, caption: str) -> str:
             return data["media_id"]
         else:
             raise RuntimeError(f"Carousel publish failed: {data}")
+    except json.JSONDecodeError:
+        raise RuntimeError(f"Unexpected output from poster.mjs: {result.stdout}")
+
+def publish_reel_to_instagram(video_url: str, caption: str) -> str:
+    """Publishes a 9:16 Video Reel with baked-in audio to Instagram."""
+    env = os.environ.copy()
+    env["INSTAGRAM_ACCESS_TOKEN"] = INSTAGRAM_ACCESS_TOKEN
+    env["INSTAGRAM_ACCOUNT_ID"] = INSTAGRAM_ACCOUNT_ID
+
+    cmd = ["node", str(POSTER_JS_PATH), "--reel", video_url, caption]
+    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+
+    if result.returncode != 0:
+        error_msg = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(f"Instagram Reel publishing error: {error_msg}")
+
+    try:
+        data = json.loads(result.stdout.strip())
+        if data.get("success"):
+            return data["media_id"]
+        else:
+            raise RuntimeError(f"Reel publish failed: {data}")
     except json.JSONDecodeError:
         raise RuntimeError(f"Unexpected output from poster.mjs: {result.stdout}")

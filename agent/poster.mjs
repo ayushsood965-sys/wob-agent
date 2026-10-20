@@ -22,7 +22,6 @@ async function sleep(ms) {
 }
 
 async function publishSingleImage(imageUrl, caption) {
-  // Step 1: Create container
   const createUrl = `${baseUrl}/${accountId}/media?image_url=${encodeURIComponent(imageUrl)}&caption=${encodeURIComponent(caption)}&access_token=${accessToken}`;
   const createRes = await fetch(createUrl, { method: 'POST' });
   const createData = await createRes.json();
@@ -33,7 +32,6 @@ async function publishSingleImage(imageUrl, caption) {
 
   const containerId = createData.id;
 
-  // Step 2: Poll container status until FINISHED
   for (let attempt = 0; attempt < 12; attempt++) {
     await sleep(2500);
     const statusUrl = `${baseUrl}/${containerId}?fields=status_code&access_token=${accessToken}`;
@@ -47,7 +45,6 @@ async function publishSingleImage(imageUrl, caption) {
     }
   }
 
-  // Step 3: Publish media
   const pubUrl = `${baseUrl}/${accountId}/media_publish?creation_id=${containerId}&access_token=${accessToken}`;
   const pubRes = await fetch(pubUrl, { method: 'POST' });
   const pubData = await pubRes.json();
@@ -64,7 +61,6 @@ async function publishCarousel(imageUrls, caption) {
     throw new Error("Carousel requires at least 2 images");
   }
 
-  // Step 1: Create child item containers
   const childIds = [];
   for (const url of imageUrls) {
     const childUrl = `${baseUrl}/${accountId}/media?image_url=${encodeURIComponent(url)}&is_carousel_item=true&access_token=${accessToken}`;
@@ -77,7 +73,6 @@ async function publishCarousel(imageUrls, caption) {
     await sleep(1500);
   }
 
-  // Step 2: Create Carousel parent container
   const parentUrl = `${baseUrl}/${accountId}/media?media_type=CAROUSEL&children=${childIds.join(',')}&caption=${encodeURIComponent(caption)}&access_token=${accessToken}`;
   const parentRes = await fetch(parentUrl, { method: 'POST' });
   const parentData = await parentRes.json();
@@ -88,7 +83,6 @@ async function publishCarousel(imageUrls, caption) {
 
   const containerId = parentData.id;
 
-  // Step 3: Poll status
   for (let attempt = 0; attempt < 12; attempt++) {
     await sleep(3000);
     const statusUrl = `${baseUrl}/${containerId}?fields=status_code&access_token=${accessToken}`;
@@ -102,7 +96,6 @@ async function publishCarousel(imageUrls, caption) {
     }
   }
 
-  // Step 4: Publish Carousel
   const pubUrl = `${baseUrl}/${accountId}/media_publish?creation_id=${containerId}&access_token=${accessToken}`;
   const pubRes = await fetch(pubUrl, { method: 'POST' });
   const pubData = await pubRes.json();
@@ -114,15 +107,55 @@ async function publishCarousel(imageUrls, caption) {
   return pubData.id;
 }
 
+async function publishReel(videoUrl, caption) {
+  const createUrl = `${baseUrl}/${accountId}/media?media_type=REELS&video_url=${encodeURIComponent(videoUrl)}&caption=${encodeURIComponent(caption)}&access_token=${accessToken}`;
+  const createRes = await fetch(createUrl, { method: 'POST' });
+  const createData = await createRes.json();
+
+  if (createData.error) {
+    throw new Error(createData.error.message || JSON.stringify(createData.error));
+  }
+
+  const containerId = createData.id;
+
+  // Poll video container status (videos take 10-25 seconds to process)
+  for (let attempt = 0; attempt < 18; attempt++) {
+    await sleep(3500);
+    const statusUrl = `${baseUrl}/${containerId}?fields=status_code&access_token=${accessToken}`;
+    const statusRes = await fetch(statusUrl);
+    const statusData = await statusRes.json();
+
+    if (statusData.status_code === 'FINISHED') {
+      break;
+    } else if (statusData.status_code === 'ERROR') {
+      throw new Error(`Reel video processing error: ${JSON.stringify(statusData)}`);
+    }
+  }
+
+  const pubUrl = `${baseUrl}/${accountId}/media_publish?creation_id=${containerId}&access_token=${accessToken}`;
+  const pubRes = await fetch(pubUrl, { method: 'POST' });
+  const pubData = await pubRes.json();
+
+  if (pubData.error) {
+    throw new Error(pubData.error.message || JSON.stringify(pubData.error));
+  }
+
+  return pubData.id;
+}
+
 async function main() {
-  const isCarousel = process.argv[2] === '--carousel';
-  
+  const mode = process.argv[2];
+
   try {
     let mediaId;
-    if (isCarousel) {
+    if (mode === '--carousel') {
       const urls = JSON.parse(process.argv[3]);
       const caption = process.argv[4] || "";
       mediaId = await publishCarousel(urls, caption);
+    } else if (mode === '--reel') {
+      const videoUrl = process.argv[3];
+      const caption = process.argv[4] || "";
+      mediaId = await publishReel(videoUrl, caption);
     } else {
       const imageUrl = process.argv[2];
       const caption = process.argv[3] || "";

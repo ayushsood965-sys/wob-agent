@@ -1,4 +1,6 @@
+import os
 import base64
+import subprocess
 import requests
 from .config import IMGBB_API_KEY
 
@@ -23,3 +25,21 @@ def upload_image(image_path: str) -> str:
         return data["data"]["url"]
     else:
         raise RuntimeError(f"ImgBB upload failed: {data}")
+
+def upload_video(video_path: str) -> str:
+    """Uploads local MP4 video file to high-speed public host and returns direct HTTPS URL."""
+    clean_path = str(video_path).replace("\\", "/")
+    cmd = [
+        "curl.exe", "-s",
+        "-F", "reqtype=fileupload",
+        "-F", f"fileToUpload=@{clean_path}",
+        "https://catbox.moe/user/api.php"
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    if result.returncode != 0:
+        raise RuntimeError(f"Video upload failed: {result.stderr}")
+
+    url = result.stdout.strip()
+    if not url.startswith("http"):
+        raise RuntimeError(f"Unexpected video upload response: '{url}'")
+    return url
