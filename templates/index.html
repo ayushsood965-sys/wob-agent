@@ -458,6 +458,64 @@
       color: #FFF;
       font-family: 'JetBrains Mono', monospace;
     }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-box {
+      background: #14110E;
+      border: 1px solid var(--gold);
+      border-radius: 16px;
+      padding: 28px;
+      width: 90%;
+      max-width: 520px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8);
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #FFF;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .token-input {
+      width: 100%;
+      padding: 12px 14px;
+      background: #0A0806;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: #FFF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      margin-bottom: 18px;
+      resize: vertical;
+      min-height: 90px;
+      box-sizing: border-box;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
   </style>
 </head>
 <body>
@@ -475,7 +533,10 @@
           <span id="status-text">AGENT RUNNING</span>
         </div>
       </div>
-      <div class="header-links">
+      <div class="header-links" style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-outline" style="padding: 8px 14px; font-size: 13px;" onclick="openTokenModal()">
+          🔑 Update Token
+        </button>
         <a href="https://www.instagram.com/words__of__becoming/" target="_blank">
           📷 @words__of__becoming ↗
         </a>
@@ -678,6 +739,70 @@
     // Poll status every 3.5 seconds
     fetchStatus();
     setInterval(fetchStatus, 3500);
+  <!-- Token Modal -->
+  <div id="token-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">🔑 Meta Graph API Access Token</div>
+      <div class="modal-desc">
+        Paste your Meta User or Page Access Token for <strong>@words__of__becoming</strong>.
+        The agent will verify the token live with Meta before activating it.
+      </div>
+      <textarea id="input-token" class="token-input" placeholder="EAAoQh5gxJ5Y..."></textarea>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeTokenModal()">Cancel</button>
+        <button class="btn btn-gold" id="btn-save-token" onclick="submitTokenUpdate()">
+          <span>✔</span> Verify & Save
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Action submitted</div>
+
+  <script>
+    let isAgentRunning = true;
+
+    function openTokenModal() {
+      document.getElementById('token-modal').classList.add('open');
+      document.getElementById('input-token').focus();
+    }
+
+    function closeTokenModal() {
+      document.getElementById('token-modal').classList.remove('open');
+    }
+
+    async function submitTokenUpdate() {
+      const token = document.getElementById('input-token').value.trim();
+      if (!token) {
+        showToast('Please paste a valid token');
+        return;
+      }
+      const saveBtn = document.getElementById('btn-save-token');
+      saveBtn.innerText = 'Verifying with Meta...';
+      saveBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/update_token', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ token })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || 'Token updated successfully!');
+          closeTokenModal();
+          document.getElementById('input-token').value = '';
+          fetchStatus();
+        } else {
+          showToast('Error: ' + (data.error || 'Verification failed'));
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message);
+      } finally {
+        saveBtn.innerHTML = '<span>✔</span> Verify & Save';
+        saveBtn.disabled = false;
+      }
+    }
   </script>
 </body>
 </html>

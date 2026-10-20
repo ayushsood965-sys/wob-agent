@@ -252,11 +252,58 @@ def get_stats():
 class ActionRequest(BaseModel):
     action: str
 
+class TokenUpdateRequest(BaseModel):
+    token: str
+
 @app.get("/api/status")
 def api_status():
     stats = get_stats()
     stats["logs"] = system_logs[-100:]
     return stats
+
+@app.post("/api/update_token")
+def api_update_token(req: TokenUpdateRequest):
+    token = req.token.strip()
+    if not token:
+        return JSONResponse({"success": False, "error": "Token cannot be empty"}, status_code=400)
+
+    import requests
+    from agent.config import INSTAGRAM_ACCOUNT_ID
+    test_url = f"https://graph.facebook.com/v21.0/{INSTAGRAM_ACCOUNT_ID}?fields=id,username&access_token={token}"
+    try:
+        res = requests.get(test_url, timeout=10)
+        res_data = res.json()
+        if "error" in res_data:
+            err_msg = res_data["error"].get("message", "Invalid token")
+            return JSONResponse({"success": False, "error": err_msg}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"success": False, "error": f"Failed to verify with Meta: {e}"}, status_code=500)
+
+    # Apply token in runtime environment
+    os.environ["INSTAGRAM_ACCESS_TOKEN"] = token
+    import agent.config
+    agent.config.INSTAGRAM_ACCESS_TOKEN = token
+
+    # Write to .env file for persistence
+    env_file = Path(__file__).parent / ".env"
+    lines = []
+    found = False
+    if env_file.exists():
+        with open(env_file, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("INSTAGRAM_ACCESS_TOKEN="):
+                    lines.append(f"INSTAGRAM_ACCESS_TOKEN={token}\n")
+                    found = True
+                else:
+                    lines.append(line)
+    if not found:
+        lines.append(f"INSTAGRAM_ACCESS_TOKEN={token}\n")
+    with open(env_file, "w", encoding="utf-8") as f:
+        f.writelines(lines)
+
+    username = res_data.get("username", "words__of__becoming")
+    log_event(f"🔑 Meta Access Token verified and updated for @{username}!")
+    return {"success": True, "message": f"Token verified & active for @{username}!"}
 
 @app.post("/api/action")
 def api_action(req: ActionRequest, bg: BackgroundTasks):
