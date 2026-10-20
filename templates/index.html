@@ -627,6 +627,24 @@
     </div>
   </div>
 
+  <!-- Token Modal -->
+  <div id="token-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">🔑 Meta Graph API Access Token</div>
+      <div class="modal-desc">
+        Paste your Meta User or Page Access Token for <strong>@words__of__becoming</strong>.
+        The agent will verify the token live with Meta before activating it.
+      </div>
+      <textarea id="input-token" class="token-input" placeholder="EAAoQh5gxJ5Y..."></textarea>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeTokenModal()">Cancel</button>
+        <button class="btn btn-gold" id="btn-save-token" onclick="submitTokenUpdate()">
+          <span>✔</span> Verify & Save
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast">Action submitted</div>
 
   <script>
@@ -637,6 +655,48 @@
       t.innerText = msg;
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function openTokenModal() {
+      document.getElementById('token-modal').classList.add('open');
+      document.getElementById('input-token').focus();
+    }
+
+    function closeTokenModal() {
+      document.getElementById('token-modal').classList.remove('open');
+    }
+
+    async function submitTokenUpdate() {
+      const token = document.getElementById('input-token').value.trim();
+      if (!token) {
+        showToast('Please paste a valid token');
+        return;
+      }
+      const saveBtn = document.getElementById('btn-save-token');
+      saveBtn.innerText = 'Verifying with Meta...';
+      saveBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/update_token', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ token })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || 'Token updated successfully!');
+          closeTokenModal();
+          document.getElementById('input-token').value = '';
+          fetchStatus();
+        } else {
+          showToast('Error: ' + (data.error || 'Verification failed'));
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message);
+      } finally {
+        saveBtn.innerHTML = '<span>✔</span> Verify & Save';
+        saveBtn.disabled = false;
+      }
     }
 
     async function sendAction(action) {
@@ -736,73 +796,9 @@
       }
     }
 
-    // Poll status every 3.5 seconds
+    // Poll status immediately and every 3.5 seconds
     fetchStatus();
     setInterval(fetchStatus, 3500);
-  <!-- Token Modal -->
-  <div id="token-modal" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-title">🔑 Meta Graph API Access Token</div>
-      <div class="modal-desc">
-        Paste your Meta User or Page Access Token for <strong>@words__of__becoming</strong>.
-        The agent will verify the token live with Meta before activating it.
-      </div>
-      <textarea id="input-token" class="token-input" placeholder="EAAoQh5gxJ5Y..."></textarea>
-      <div class="modal-actions">
-        <button class="btn btn-outline" onclick="closeTokenModal()">Cancel</button>
-        <button class="btn btn-gold" id="btn-save-token" onclick="submitTokenUpdate()">
-          <span>✔</span> Verify & Save
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div id="toast" class="toast">Action submitted</div>
-
-  <script>
-    let isAgentRunning = true;
-
-    function openTokenModal() {
-      document.getElementById('token-modal').classList.add('open');
-      document.getElementById('input-token').focus();
-    }
-
-    function closeTokenModal() {
-      document.getElementById('token-modal').classList.remove('open');
-    }
-
-    async function submitTokenUpdate() {
-      const token = document.getElementById('input-token').value.trim();
-      if (!token) {
-        showToast('Please paste a valid token');
-        return;
-      }
-      const saveBtn = document.getElementById('btn-save-token');
-      saveBtn.innerText = 'Verifying with Meta...';
-      saveBtn.disabled = true;
-
-      try {
-        const res = await fetch('/api/update_token', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ token })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast(data.message || 'Token updated successfully!');
-          closeTokenModal();
-          document.getElementById('input-token').value = '';
-          fetchStatus();
-        } else {
-          showToast('Error: ' + (data.error || 'Verification failed'));
-        }
-      } catch (err) {
-        showToast('Network error: ' + err.message);
-      } finally {
-        saveBtn.innerHTML = '<span>✔</span> Verify & Save';
-        saveBtn.disabled = false;
-      }
-    }
   </script>
 </body>
 </html>
