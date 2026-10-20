@@ -83,10 +83,10 @@ def run_carousel_cycle(dry_run: bool = False) -> dict:
 
 def run_reel_cycle(dry_run: bool = False) -> dict:
     """
-    Renders and publishes a 9:16 Video Reel with baked-in 432Hz manifestation frequency audio!
+    Renders and publishes a 9:16 Video Reel with baked-in motivational audio from our top 10 library!
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"\n[{timestamp}] ✦ Starting Looping Video Reel Cycle (With 432Hz Audio)...")
+    print(f"\n[{timestamp}] ✦ Starting Looping Video Reel Cycle (With Motivational Audio)...")
 
     content = generate_manifestation_post()
     quote = content["quote"]
@@ -99,10 +99,9 @@ def run_reel_cycle(dry_run: bool = False) -> dict:
     # Step 1: Render base card
     card_path = render_quote_card(quote, category, affirmation)
 
-    # Step 2: Render 6s Video Reel with 432Hz ambient audio baked in
-    print("✦ Rendering 9:16 Video Reel with 432Hz Solfeggio Manifestation audio...")
-    reel_video_path = create_looping_reel(card_path)
-    print(f"  ✔ Rendered Reel: {reel_video_path}")
+    # Step 2: Render 9:16 Video Reel with rotating motivational music
+    reel_video_path, soundscape_name = create_looping_reel(card_path)
+    print(f"  ✔ Rendered Reel with Audio [{soundscape_name}]: {reel_video_path}")
 
     # Step 3: Upload video
     print("✦ Uploading video to public host...")
@@ -121,6 +120,7 @@ def run_reel_cycle(dry_run: bool = False) -> dict:
     return {
         "timestamp": timestamp,
         "type": "reel_with_audio",
+        "soundscape": soundscape_name,
         "quote": quote,
         "category": category,
         "video_url": video_url,

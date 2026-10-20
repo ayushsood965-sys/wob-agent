@@ -1,5 +1,6 @@
 import os
 import uuid
+import random
 import subprocess
 import numpy as np
 import imageio_ffmpeg
@@ -10,28 +11,47 @@ from .card_renderer import BG_COLOR, WIDTH as CARD_W, HEIGHT as CARD_H
 REEL_W = 1080
 REEL_H = 1920
 FPS = 24
-DURATION_SEC = 6
+DURATION_SEC = 7
 TOTAL_FRAMES = FPS * DURATION_SEC
 
-def generate_ambient_music(duration_sec: int = 6) -> str:
-    """Synthesizes a 432Hz Pythagorean manifestation solfeggio audio track with warm harmonics."""
-    audio_path = OUTPUT_DIR / f"audio_432hz_{uuid.uuid4().hex[:6]}.mp3"
+# Top 10 Motivational & Manifestation Frequencies / Soundscapes
+SOUNDSCAPES = [
+    {"name": "432Hz Deep Healing & Reality Alignment", "freq": 432, "sub": 216, "fifth": 648},
+    {"name": "528Hz Transformation & Miracle Frequency", "freq": 528, "sub": 264, "fifth": 792},
+    {"name": "639Hz Heart Harmony & Cellular Peace", "freq": 639, "sub": 319.5, "fifth": 958.5},
+    {"name": "741Hz Intuitive Awakening & Clarity", "freq": 741, "sub": 370.5, "fifth": 1111.5},
+    {"name": "852Hz Subconscious Return to Order", "freq": 852, "sub": 426, "fifth": 1278},
+    {"name": "963Hz Pure Consciousness & Crown Activation", "freq": 963, "sub": 481.5, "fifth": 1444.5},
+    {"name": "1111Hz Angelic Portal Frequency", "freq": 1111, "sub": 555.5, "fifth": 1666.5},
+    {"name": "7.83Hz Schumann Resonance + 432Hz Alpha Pad", "freq": 432, "sub": 216, "fifth": 439.83},
+    {"name": "Deep Theta Binaural Wave (4Hz Brainwave)", "freq": 200, "sub": 100, "fifth": 204},
+    {"name": "Golden Ratio Harmonic Drone", "freq": 432, "sub": 267, "fifth": 699}
+]
+
+def generate_ambient_music(duration_sec: int = 7) -> tuple:
+    """Synthesizes a rich, high-vibe motivational manifestation audio track from the top 10 soundscapes."""
+    soundscape = random.choice(SOUNDSCAPES)
+    audio_path = OUTPUT_DIR / f"audio_{int(soundscape['freq'])}hz_{uuid.uuid4().hex[:6]}.mp3"
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
 
-    # Generate 432Hz fundamental, 216Hz sub-bass, 648Hz fifth harmonic, and subtle pink texture with smooth fade in/out
+    f1 = soundscape["freq"]
+    f2 = soundscape["sub"]
+    f3 = soundscape["fifth"]
+
+    # Synthesize fundamental, sub-bass, harmonic fifth, and warm pink noise texture with smooth fade in/out
     cmd = [
         ffmpeg, "-y",
-        "-f", "lavfi", "-i", "anoisesrc=c=pink:r=44100:a=0.01",
-        "-f", "lavfi", "-i", "sine=frequency=432:sample_rate=44100",
-        "-f", "lavfi", "-i", "sine=frequency=216:sample_rate=44100",
-        "-f", "lavfi", "-i", "sine=frequency=648:sample_rate=44100",
+        "-f", "lavfi", "-i", "anoisesrc=c=pink:r=44100:a=0.012",
+        "-f", "lavfi", "-i", f"sine=frequency={f1}:sample_rate=44100",
+        "-f", "lavfi", "-i", f"sine=frequency={f2}:sample_rate=44100",
+        "-f", "lavfi", "-i", f"sine=frequency={f3}:sample_rate=44100",
         "-filter_complex", (
-            f"[1:a]volume=0.25[a1];"
-            f"[2:a]volume=0.35[a2];"
-            f"[3:a]volume=0.15[a3];"
+            f"[1:a]volume=0.28[a1];"
+            f"[2:a]volume=0.38[a2];"
+            f"[3:a]volume=0.14[a3];"
             f"[0:a]volume=0.04[a0];"
             f"[a1][a2][a3][a0]amix=inputs=4:duration=first,"
-            f"afade=t=in:ss=0:d=1,afade=t=out:st={duration_sec-1}:d=1[out]"
+            f"afade=t=in:ss=0:d=1,afade=t=out:st={duration_sec-1.2}:d=1.2[out]"
         ),
         "-map", "[out]",
         "-t", str(duration_sec),
@@ -40,12 +60,13 @@ def generate_ambient_music(duration_sec: int = 6) -> str:
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
         raise RuntimeError(f"FFmpeg audio generation failed: {res.stderr}")
-    return str(audio_path)
+    return str(audio_path), soundscape["name"]
 
-def create_looping_reel(card_image_path: str) -> str:
+def create_looping_reel(card_image_path: str) -> tuple:
     """
-    Renders a 9:16 vertical 1080x1920 MP4 video reel with subtle ambient breathing motion
-    AND bakes in a relaxing 432Hz manifestation frequency audio track.
+    Renders a 9:16 vertical 1080x1920 MP4 video reel with smooth breathing motion
+    AND bakes in a rotating motivational/manifestation frequency audio track.
+    Returns: (reel_video_path, soundscape_name)
     """
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
     card_img = Image.open(card_image_path).convert("RGBA")
@@ -53,7 +74,7 @@ def create_looping_reel(card_image_path: str) -> str:
     raw_video_path = OUTPUT_DIR / f"raw_video_{uuid.uuid4().hex[:6]}.mp4"
     final_reel_path = OUTPUT_DIR / f"reel_{uuid.uuid4().hex[:8]}.mp4"
 
-    # Base 9:16 canvas
+    # Base 9:16 luxury cream canvas
     base_canvas = Image.new("RGBA", (REEL_W, REEL_H), (*BG_COLOR, 255))
     card_y = (REEL_H - CARD_H) // 2
     base_canvas.paste(card_img, (0, card_y), card_img)
@@ -72,7 +93,7 @@ def create_looping_reel(card_image_path: str) -> str:
 
     for f in range(TOTAL_FRAMES):
         t = f / TOTAL_FRAMES
-        scale = 1.0 + 0.016 * np.sin(np.pi * t)
+        scale = 1.0 + 0.018 * np.sin(np.pi * t)
         
         scaled_w = int(REEL_W * scale)
         scaled_h = int(REEL_H * scale)
@@ -86,29 +107,32 @@ def create_looping_reel(card_image_path: str) -> str:
 
     writer.close()
 
-    # Step 2: Generate 432Hz ambient audio
-    audio_path = generate_ambient_music(DURATION_SEC)
+    # Step 2: Generate rotating motivational audio from library
+    audio_path, soundscape_name = generate_ambient_music(DURATION_SEC)
 
-    # Step 3: Multiplex audio and video into final MP4 with AAC audio
+    # Step 3: Multiplex audio and video into final MP4
+    clean_raw = str(raw_video_path).replace("\\", "/")
+    clean_audio = str(audio_path).replace("\\", "/")
+    clean_out = str(final_reel_path).replace("\\", "/")
+
     mux_cmd = [
         ffmpeg, "-y",
-        "-i", str(raw_video_path),
-        "-i", audio_path,
+        "-i", clean_raw,
+        "-i", clean_audio,
         "-c:v", "copy",
         "-c:a", "aac",
         "-b:a", "192k",
         "-shortest",
-        str(final_reel_path)
+        clean_out
     ]
     mux_res = subprocess.run(mux_cmd, capture_output=True, text=True)
     if mux_res.returncode != 0:
         raise RuntimeError(f"FFmpeg muxing failed: {mux_res.stderr}")
 
-    # Clean up temporary raw files
     try:
         os.remove(raw_video_path)
         os.remove(audio_path)
     except Exception:
         pass
 
-    return str(final_reel_path)
+    return str(final_reel_path), soundscape_name
