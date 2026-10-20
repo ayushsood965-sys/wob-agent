@@ -1,0 +1,27 @@
+# Environment variables & secrets
+.env
+*.env.local
+
+# Node dependencies
+node_modules/
+package-lock.json
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Local SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated output media
+generated_cards/
+
+# IDE / System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
