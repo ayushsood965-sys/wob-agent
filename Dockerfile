@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Install Node.js dependencies
-COPY package.json package-lock.json ./
+COPY package.json ./
 RUN npm install --omit=dev
 
 # Install Python dependencies
