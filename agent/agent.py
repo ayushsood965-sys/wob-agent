@@ -81,12 +81,12 @@ def run_carousel_cycle(dry_run: bool = False) -> dict:
         "media_id": media_id
     }
 
-def run_reel_cycle(dry_run: bool = False) -> dict:
+def run_reel_cycle(dry_run: bool = False, track_id: str = None) -> dict:
     """
-    Renders and publishes a 9:16 Video Reel with baked-in motivational audio from our top 10 library!
+    Renders and publishes a 9:16 Video Reel with baked-in motivational audio from our top 10 Instagram library!
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"\n[{timestamp}] ✦ Starting Looping Video Reel Cycle (With Motivational Audio)...")
+    print(f"\n[{timestamp}] ✦ Starting Looping Video Reel Cycle (With Instagram Motivational Music)...")
 
     content = generate_manifestation_post()
     quote = content["quote"]
@@ -99,28 +99,30 @@ def run_reel_cycle(dry_run: bool = False) -> dict:
     # Step 1: Render base card
     card_path = render_quote_card(quote, category, affirmation)
 
-    # Step 2: Render 9:16 Video Reel with rotating motivational music
-    reel_video_path, soundscape_name = create_looping_reel(card_path)
-    print(f"  ✔ Rendered Reel with Audio [{soundscape_name}]: {reel_video_path}")
+    # Step 2: Render 9:16 Video Reel with rotating motivational music from Instagram library
+    reel_video_path, track_info = create_looping_reel(card_path, track_id=track_id)
+    audio_name = track_info["audio_name"]
+    print(f"  ✔ Rendered Reel with Instagram Music [{audio_name}]: {reel_video_path}")
 
     # Step 3: Upload video
     print("✦ Uploading video to public host...")
     video_url = upload_video(reel_video_path)
     print(f"  ✔ Public Video URL: {video_url}")
 
-    # Step 4: Publish Reel
+    # Step 4: Publish Reel with custom audio_name metadata
     if dry_run:
         media_id = "dry_run_reel_id"
     else:
-        print("✦ Publishing Video Reel to Instagram...")
-        media_id = publish_reel_to_instagram(video_url, caption)
-        print(f"  ✔ REEL PUBLISHED WITH AUDIO! Instagram Media ID: {media_id}")
+        print(f"✦ Publishing Video Reel to Instagram with Music: '{audio_name}'...")
+        media_id = publish_reel_to_instagram(video_url, caption, audio_name=audio_name)
+        print(f"  ✔ REEL PUBLISHED WITH INSTAGRAM AUDIO [{audio_name}]! Media ID: {media_id}")
 
     record_post(quote, category, caption, video_url, media_id)
     return {
         "timestamp": timestamp,
         "type": "reel_with_audio",
-        "soundscape": soundscape_name,
+        "audio_track": audio_name,
+        "track_id": track_info.get("id"),
         "quote": quote,
         "category": category,
         "video_url": video_url,

@@ -50,13 +50,13 @@ def publish_carousel_to_instagram(image_urls: list, caption: str) -> str:
     except json.JSONDecodeError:
         raise RuntimeError(f"Unexpected output from poster.mjs: {result.stdout}")
 
-def publish_reel_to_instagram(video_url: str, caption: str) -> str:
-    """Publishes a 9:16 Video Reel with baked-in audio to Instagram."""
+def publish_reel_to_instagram(video_url: str, caption: str, audio_name: str = "") -> str:
+    """Publishes a 9:16 Video Reel with baked-in audio and custom audio_name tag to Instagram."""
     env = os.environ.copy()
     env["INSTAGRAM_ACCESS_TOKEN"] = INSTAGRAM_ACCESS_TOKEN
     env["INSTAGRAM_ACCOUNT_ID"] = INSTAGRAM_ACCOUNT_ID
 
-    cmd = ["node", str(POSTER_JS_PATH), "--reel", video_url, caption]
+    cmd = ["node", str(POSTER_JS_PATH), "--reel", video_url, caption, audio_name]
     result = subprocess.run(cmd, capture_output=True, text=True, env=env)
 
     if result.returncode != 0:

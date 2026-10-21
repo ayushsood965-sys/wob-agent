@@ -24,6 +24,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from agent.config import POSTING_TIMES, TIMEZONE, DB_PATH, INSTAGRAM_HANDLE
 from agent.agent import run_carousel_cycle, run_reel_cycle, run_posting_cycle
+from agent.audio_library import INSTAGRAM_MOTIVATIONAL_TRACKS
 from agent.auto_commenter import process_comments
 from agent.db import init_db
 
@@ -149,10 +150,10 @@ class AgentManager:
             log_event(f"❌ Scheduled Carousel failed: {e}", level="ERROR")
 
     def execute_reel_job(self):
-        log_event("⏰ Scheduled Trigger: Generating & publishing 9:16 Video Reel with 432Hz audio...")
+        log_event("⏰ Scheduled Trigger: Generating & publishing 9:16 Video Reel with Instagram Motivational Music...")
         try:
             res = run_reel_cycle(dry_run=False)
-            log_event(f"✔ Scheduled Reel published! Media ID: {res['media_id']} | Soundscape: {res.get('soundscape')}")
+            log_event(f"✔ Scheduled Reel published! Media ID: {res['media_id']} | Track: {res.get('audio_track')}")
         except Exception as e:
             log_event(f"❌ Scheduled Reel failed: {e}", level="ERROR")
 
@@ -324,12 +325,16 @@ def api_action(req: ActionRequest, bg: BackgroundTasks):
         return {"success": True, "message": "Carousel generation & publishing started in background"}
     elif action == "post_reel":
         bg.add_task(manager.execute_reel_job)
-        return {"success": True, "message": "Reel with 432Hz audio generation started in background"}
+        return {"success": True, "message": "Reel with Instagram Motivational Music started in background"}
     elif action == "check_comments":
         bg.add_task(manager.execute_comment_job)
         return {"success": True, "message": "Comment scan started in background"}
     else:
         return JSONResponse({"success": False, "error": "Unknown action"}, status_code=400)
+
+@app.get("/api/music_tracks")
+def api_music_tracks():
+    return {"success": True, "tracks": INSTAGRAM_MOTIVATIONAL_TRACKS}
 
 @app.get("/", response_class=HTMLResponse)
 def index():

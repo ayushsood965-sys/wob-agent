@@ -2,11 +2,17 @@ import os
 import uuid
 import random
 import subprocess
+from pathlib import Path
 import numpy as np
 import imageio_ffmpeg
 from PIL import Image
 from .config import OUTPUT_DIR, BASE_DIR
 from .card_renderer import WIDTH as CARD_W, HEIGHT as CARD_H
+from .audio_library import (
+    get_random_instagram_track,
+    get_track_by_id,
+    INSTAGRAM_MOTIVATIONAL_TRACKS
+)
 
 REEL_W = 1080
 REEL_H = 1920
@@ -14,59 +20,11 @@ FPS = 24
 DURATION_SEC = 7
 TOTAL_FRAMES = FPS * DURATION_SEC
 
-# Top 10 Motivational & Manifestation Frequencies / Soundscapes
-SOUNDSCAPES = [
-    {"name": "432Hz Deep Healing & Reality Alignment", "freq": 432, "sub": 216, "fifth": 648},
-    {"name": "528Hz Transformation & Miracle Frequency", "freq": 528, "sub": 264, "fifth": 792},
-    {"name": "639Hz Heart Harmony & Cellular Peace", "freq": 639, "sub": 319.5, "fifth": 958.5},
-    {"name": "741Hz Intuitive Awakening & Clarity", "freq": 741, "sub": 370.5, "fifth": 1111.5},
-    {"name": "852Hz Subconscious Return to Order", "freq": 852, "sub": 426, "fifth": 1278},
-    {"name": "963Hz Pure Consciousness & Crown Activation", "freq": 963, "sub": 481.5, "fifth": 1444.5},
-    {"name": "1111Hz Angelic Portal Frequency", "freq": 1111, "sub": 555.5, "fifth": 1666.5},
-    {"name": "7.83Hz Schumann Resonance + 432Hz Alpha Pad", "freq": 432, "sub": 216, "fifth": 439.83},
-    {"name": "Deep Theta Binaural Wave (4Hz Brainwave)", "freq": 200, "sub": 100, "fifth": 204},
-    {"name": "Golden Ratio Harmonic Drone", "freq": 432, "sub": 267, "fifth": 699}
-]
-
-def generate_ambient_music(duration_sec: int = 7) -> tuple:
-    """Synthesizes a rich, high-vibe motivational manifestation audio track from the top 10 soundscapes."""
-    soundscape = random.choice(SOUNDSCAPES)
-    audio_path = OUTPUT_DIR / f"audio_{int(soundscape['freq'])}hz_{uuid.uuid4().hex[:6]}.mp3"
-    ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
-
-    f1 = soundscape["freq"]
-    f2 = soundscape["sub"]
-    f3 = soundscape["fifth"]
-
-    # Synthesize fundamental, sub-bass, harmonic fifth, and warm pink noise texture with smooth fade in/out
-    cmd = [
-        ffmpeg, "-y",
-        "-f", "lavfi", "-i", "anoisesrc=c=pink:r=44100:a=0.012",
-        "-f", "lavfi", "-i", f"sine=frequency={f1}:sample_rate=44100",
-        "-f", "lavfi", "-i", f"sine=frequency={f2}:sample_rate=44100",
-        "-f", "lavfi", "-i", f"sine=frequency={f3}:sample_rate=44100",
-        "-filter_complex", (
-            f"[1:a]volume=0.28[a1];"
-            f"[2:a]volume=0.38[a2];"
-            f"[3:a]volume=0.14[a3];"
-            f"[0:a]volume=0.04[a0];"
-            f"[a1][a2][a3][a0]amix=inputs=4:duration=first,"
-            f"afade=t=in:ss=0:d=1,afade=t=out:st={duration_sec-1.2}:d=1.2[out]"
-        ),
-        "-map", "[out]",
-        "-t", str(duration_sec),
-        str(audio_path)
-    ]
-    res = subprocess.run(cmd, capture_output=True, text=True)
-    if res.returncode != 0:
-        raise RuntimeError(f"FFmpeg audio generation failed: {res.stderr}")
-    return str(audio_path), soundscape["name"]
-
-def create_looping_reel(card_image_path: str) -> tuple:
+def create_looping_reel(card_image_path: str, track_id: str = None) -> tuple:
     """
     Renders a 9:16 vertical 1080x1920 MP4 video reel with smooth breathing motion
-    AND bakes in a rotating motivational/manifestation frequency audio track.
-    Returns: (reel_video_path, soundscape_name)
+    AND selects a random viral motivational music track from our curated Instagram library.
+    Returns: (reel_video_path, track_info_dict)
     """
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
     card_img = Image.open(card_image_path).convert("RGBA")
@@ -108,8 +66,11 @@ def create_looping_reel(card_image_path: str) -> tuple:
 
     writer.close()
 
-    # Step 2: Generate rotating motivational audio from library
-    audio_path, soundscape_name = generate_ambient_music(DURATION_SEC)
+    # Step 2: Select random motivational track from Instagram Library
+    if track_id:
+        audio_path, track_info = get_track_by_id(track_id, duration_sec=DURATION_SEC)
+    else:
+        audio_path, track_info = get_random_instagram_track(duration_sec=DURATION_SEC)
 
     # Step 3: Multiplex audio and video into final MP4
     clean_raw = str(raw_video_path).replace("\\", "/")
@@ -132,8 +93,7 @@ def create_looping_reel(card_image_path: str) -> tuple:
 
     try:
         os.remove(raw_video_path)
-        os.remove(audio_path)
     except Exception:
         pass
 
-    return str(final_reel_path), soundscape_name
+    return str(final_reel_path), track_info

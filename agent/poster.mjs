@@ -107,8 +107,11 @@ async function publishCarousel(imageUrls, caption) {
   return pubData.id;
 }
 
-async function publishReel(videoUrl, caption) {
-  const createUrl = `${baseUrl}/${accountId}/media?media_type=REELS&video_url=${encodeURIComponent(videoUrl)}&caption=${encodeURIComponent(caption)}&access_token=${accessToken}`;
+async function publishReel(videoUrl, caption, audioName = "") {
+  let createUrl = `${baseUrl}/${accountId}/media?media_type=REELS&video_url=${encodeURIComponent(videoUrl)}&caption=${encodeURIComponent(caption)}&access_token=${accessToken}`;
+  if (audioName && audioName.trim()) {
+    createUrl += `&audio_name=${encodeURIComponent(audioName.trim())}`;
+  }
   const createRes = await fetch(createUrl, { method: 'POST' });
   const createData = await createRes.json();
 
@@ -155,7 +158,8 @@ async function main() {
     } else if (mode === '--reel') {
       const videoUrl = process.argv[3];
       const caption = process.argv[4] || "";
-      mediaId = await publishReel(videoUrl, caption);
+      const audioName = process.argv[5] || "";
+      mediaId = await publishReel(videoUrl, caption, audioName);
     } else {
       const imageUrl = process.argv[2];
       const caption = process.argv[3] || "";

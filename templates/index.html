@@ -276,6 +276,70 @@
       background: rgba(16, 185, 129, 0.25);
     }
 
+    /* Instagram Music Library Grid */
+    .music-panel {
+      margin-bottom: 28px;
+    }
+    .music-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .music-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(198, 166, 100, 0.15);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+    .music-card:hover {
+      background: rgba(198, 166, 100, 0.08);
+      border-color: var(--gold);
+      transform: translateY(-2px);
+    }
+    .music-idx {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(198, 166, 100, 0.15);
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .music-info {
+      flex: 1;
+      overflow: hidden;
+    }
+    .music-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #FFF;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .music-artist {
+      font-size: 11px;
+      color: var(--gold);
+      margin-top: 1px;
+    }
+    .music-vibe {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     /* Layout Split */
     .two-col {
       display: grid;
@@ -561,9 +625,9 @@
         <div class="stat-sub">3 slots daily</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">🎵 Video Reels (432Hz)</div>
+        <div class="stat-label">🎵 Video Reels (IG Music)</div>
         <div class="stat-value" id="stat-reels">0</div>
-        <div class="stat-sub">2 slots daily with music</div>
+        <div class="stat-sub">Top 10 rotating tracks</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">💬 Comments Replied</div>
@@ -599,6 +663,20 @@
       <div class="schedule-title">⏱ Next Scheduled Slots (Asia/Kolkata):</div>
       <div class="schedule-pills" id="schedule-pills">
         <span class="schedule-pill">Loading schedule...</span>
+      </div>
+    </div>
+
+    <!-- Instagram Music Library Panel -->
+    <div class="panel music-panel">
+      <div class="panel-title" style="justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>🎵 Instagram Music Library</span>
+          <span style="font-size: 11px; color: var(--gold); font-weight: normal; background: rgba(198, 166, 100, 0.1); border: 1px solid var(--card-border); padding: 2px 8px; border-radius: 12px;">Top 10 Curated Tracks</span>
+        </div>
+        <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">🎲 Randomly selected per reel · Official audio tags</span>
+      </div>
+      <div class="music-grid" id="music-grid">
+        <div style="color: var(--text-muted); font-size: 13px;">Loading Instagram tracks...</div>
       </div>
     </div>
 
@@ -796,8 +874,31 @@
       }
     }
 
+    async function fetchMusicTracks() {
+      try {
+        const res = await fetch('/api/music_tracks');
+        const data = await res.json();
+        const grid = document.getElementById('music-grid');
+        if (data.tracks && data.tracks.length > 0) {
+          grid.innerHTML = data.tracks.map((t, i) => `
+            <div class="music-card">
+              <div class="music-idx">${i + 1}</div>
+              <div class="music-info">
+                <div class="music-title">${t.title}</div>
+                <div class="music-artist">by ${t.artist}</div>
+                <div class="music-vibe">${t.vibe}</div>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load music tracks:', err);
+      }
+    }
+
     // Poll status immediately and every 3.5 seconds
     fetchStatus();
+    fetchMusicTracks();
     setInterval(fetchStatus, 3500);
   </script>
 </body>
