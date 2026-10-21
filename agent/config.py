@@ -30,4 +30,9 @@ TIMEZONE = os.getenv("TIMEZONE", "Asia/Kolkata")
 OUTPUT_DIR = BASE_DIR / "generated_cards"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+PUBLIC_APP_URL = os.getenv("PUBLIC_APP_URL") or os.getenv("COOLIFY_URL") or "https://wob.scholarhubhpu.in"
+if not PUBLIC_APP_URL.startswith("http"):
+    PUBLIC_APP_URL = f"https://{PUBLIC_APP_URL}"
+PUBLIC_APP_URL = PUBLIC_APP_URL.rstrip("/")
+
 DB_PATH = Path(os.getenv("DB_PATH", str(BASE_DIR / "agent_data.db")))

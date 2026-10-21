@@ -22,13 +22,14 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
-from agent.config import POSTING_TIMES, TIMEZONE, DB_PATH, INSTAGRAM_HANDLE
+from agent.config import POSTING_TIMES, TIMEZONE, DB_PATH, INSTAGRAM_HANDLE, OUTPUT_DIR, PUBLIC_APP_URL
 from agent.agent import run_carousel_cycle, run_reel_cycle, run_posting_cycle
 from agent.audio_library import INSTAGRAM_MOTIVATIONAL_TRACKS
 from agent.auto_commenter import process_comments
 from agent.db import init_db
 
 app = FastAPI(title="Words of Becoming — Agent Control Center")
+app.mount("/generated_cards", StaticFiles(directory=str(OUTPUT_DIR)), name="generated_cards")
 
 # In-Memory Circular Log Buffer
 MAX_LOGS = 600
@@ -155,6 +156,9 @@ class AgentManager:
             res = run_reel_cycle(dry_run=False)
             log_event(f"✔ Scheduled Reel published! Media ID: {res['media_id']} | Track: {res.get('audio_track')}")
         except Exception as e:
+            err_str = str(e)
+            if "access token" in err_str.lower() or "session has expired" in err_str.lower():
+                log_event("🔑 Meta Access Token has expired. Please click 'Update Token' at the top to paste a fresh token!", level="ERROR")
             log_event(f"❌ Scheduled Reel failed: {e}", level="ERROR")
 
     def execute_comment_job(self):
